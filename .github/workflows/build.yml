@@ -87,20 +87,28 @@ jobs:
     - name: Get Artifact URL
       if: github.event_name == 'pull_request'
       run: |
-        $artifactUrl = "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}/artifacts"
+        # Get the artifact ID from the upload step
+        $artifactId = "${{ steps.upload-artifact.outputs.artifact-id }}"
+        $artifactUrl = "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}/artifacts/$artifactId"
         echo "ARTIFACT_URL=$artifactUrl" >> $env:GITHUB_ENV
 
     - name: Comment PR
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly set the token
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const artifactUrl = process.env.ARTIFACT_URL;
+          const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          
           const message = `🎉 Build completed successfully!\n\n` +
-                         `📦 Download the latest build [here](${artifactUrl})\n\n` +
+                         `📦 To download the build:\n` +
+                         `1. [Direct Download Link](${artifactUrl})\n` +
+                         `   or\n` +
+                         `2. [View in Actions](${runUrl})\n\n` +
+                         `⚠️ Note: You must be logged in to GitHub to download artifacts.\n` +
                          `The artifact will be available for 1 day.\n\n` +
-                         `Download and test the application to verify the changes.`;
+                         `Please download and test the application to verify the changes.`;
           
           await github.rest.issues.createComment({
             issue_number: context.issue.number,
