@@ -24,24 +24,28 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        pip install -r requirements.txt 2>nul || echo "No requirements.txt found"
+        # Try to install requirements if file exists
+        if (Test-Path requirements.txt) {
+          pip install -r requirements.txt
+        }
 
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
-        echo "Current directory contents:"
-        dir
+        # Show current directory and contents
         echo "Current working directory:"
-        python -c "import os; print(os.getcwd())"
-        cd D:\a\File-Organizer\File-Organizer
+        pwd
+        echo "Directory contents:"
+        dir
+        # Run PyInstaller with the spec file
         pyinstaller --clean --log-level DEBUG FileOrganizer.spec
         echo "pyinstaller build completed."
 
-    - name: List all files in dist directory
+    - name: List dist directory contents
       run: |
-        echo "Listing all files in dist directory and subdirectories:"
+        echo "Listing contents of dist directory:"
         if (Test-Path dist) {
-          Get-ChildItem -Path dist -Recurse
+          Get-ChildItem -Path dist -Recurse | Format-Table Name, Length, LastWriteTime
         } else {
           echo "dist directory not found"
         }
@@ -49,20 +53,22 @@ jobs:
     - name: Zip the package
       run: |
         echo "Checking if FileOrganizer.exe exists..."
-        $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | Select-Object -First 1 -ExpandProperty FullName
+        $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | 
+                  Select-Object -First 1 -ExpandProperty FullName
         if ($exePath) {
           echo "FileOrganizer.exe found at: $exePath"
           $distPath = Split-Path -Parent $exePath
-          Compress-Archive -Path "$distPath\*" -DestinationPath dist\FileOrganizer.zip -Force
+          Compress-Archive -Path "$distPath\*" -DestinationPath "FileOrganizer.zip" -Force
           echo "ZIP archive created."
         } else {
-          Write-Error "FileOrganizer.exe not found in dist directory or its subdirectories"
+          Write-Error "FileOrganizer.exe not found in dist directory"
+          exit 1
 
-    - name: Upload ZIP
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: FileOrganizer
-        path: dist\FileOrganizer.zip
+        path: FileOrganizer.zip
         retention-days: 1
 
   cleanup:
