@@ -93,7 +93,7 @@ jobs:
         
         # Run PyInstaller with additional debug info
         echo "Running PyInstaller..."
-        pyinstaller --clean --log-level DEBUG --onefile FileOrganizer.spec
+        pyinstaller --clean --log-level DEBUG FileOrganizer.spec
         
         # Verify dist directory contents
         echo "Checking dist directory..."
