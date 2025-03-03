@@ -25,15 +25,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyinstaller
 
+    - name: List dist directory contents before build
+      run: |
+        echo "Listing contents of dist directory before build:"
+        dir dist
+
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
         pyinstaller --clean FileOrganizer.spec
         echo "pyinstaller build completed."
 
-    - name: List dist directory contents
+    - name: List dist directory contents after build
       run: |
-        echo "Listing contents of dist directory:"
+        echo "Listing contents of dist directory after build:"
         dir dist
 
     - name: Zip the package
