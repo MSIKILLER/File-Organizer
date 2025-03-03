@@ -29,6 +29,10 @@ jobs:
       run: |
         pyinstaller FileOrganizer.spec
 
+    - name: List dist directory contents
+      run: |
+        dir dist
+
     - name: Zip the package
       run: |
         powershell Compress-Archive -Path dist/FileOrganizer.exe -DestinationPath dist/FileOrganizer.zip
