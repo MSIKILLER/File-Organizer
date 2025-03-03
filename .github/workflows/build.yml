@@ -4,17 +4,37 @@ on:
   pull_request:
     branches:
       - master
+  issue_comment:
+    types: [created]
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
-# Add permissions block at the workflow level
 permissions:
   contents: read
   pull-requests: write
   issues: write
 
 jobs:
+  # Add a job to check for rebuild comments
+  check_comment:
+    runs-on: windows-latest
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, 'build this please')
+    steps:
+      - name: React to comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
   build:
+    needs: [check_comment]
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && needs.check_comment.result == 'success'))
     runs-on: windows-latest
 
     steps:
@@ -35,17 +55,59 @@ jobs:
           pip install -r requirements.txt
         }
 
+    - name: Build Status Comment
+      if: github.event_name == 'issue_comment'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Rebuild initiated! Please wait...'
+          });
+
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
+        # Set PYTHONPATH to include project root
+        $env:PYTHONPATH = $pwd.Path
+        echo "PYTHONPATH set to: $env:PYTHONPATH"
+        
         # Show current directory and contents
         echo "Current working directory:"
         pwd
         echo "Directory contents:"
         dir
-        # Run PyInstaller with the spec file
+        
+        # Create version.py if it doesn't exist
+        if (-not (Test-Path version.py)) {
+            echo 'VERSION = "1.0.0"' | Out-File -FilePath version.py -Encoding utf8
+            echo "Created version.py"
+        }
+        
+        # Verify version.py contents
+        echo "VERSION contents:"
+        Get-Content version.py
+        
+        # Run PyInstaller with additional debug info
+        echo "Running PyInstaller..."
         pyinstaller --clean --log-level DEBUG FileOrganizer.spec
+        
+        # Verify dist directory contents
+        echo "Checking dist directory..."
+        if (Test-Path dist) {
+            Get-ChildItem -Path dist -Recurse
+        } else {
+            echo "dist directory not found after build"
+            exit 1
+        }
+        
         echo "pyinstaller build completed."
+      env:
+        PYTHONPATH: ${GITHUB_WORKSPACE}
+        PYTHONIOENCODING: utf8
 
     - name: List dist directory contents
       run: |
@@ -93,7 +155,7 @@ jobs:
         echo "ARTIFACT_URL=$artifactUrl" >> $env:GITHUB_ENV
 
     - name: Comment PR
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' || github.event_name == 'issue_comment'
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,7 +163,7 @@ jobs:
           const artifactUrl = process.env.ARTIFACT_URL;
           const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
           
-          const message = `🎉 Build completed successfully!\n\n` +
+          const message = `🎉 Build ${github.event_name === 'issue_comment' ? 're' : ''}completed successfully!\n\n` +
                          `📦 To download the build:\n` +
                          `1. [Direct Download Link](${artifactUrl})\n` +
                          `   or\n` +

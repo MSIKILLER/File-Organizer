@@ -1,0 +1,73 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if (Test-Path requirements.txt) {
+          pip install -r requirements.txt
+        }
+
+    - name: Build EXE
+      run: |
+        pyinstaller --clean FileOrganizer.spec
+        echo "Building release artifacts..."
+
+    - name: Create Build ZIP
+      run: |
+        $version = "${{ github.ref_name }}"
+        $buildPath = "dist/FileOrganizer-$version"
+        echo "Creating build archive..."
+        Compress-Archive -Path "dist/FileOrganizer-*.exe" -DestinationPath "$buildPath-build.zip" -Force
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/FileOrganizer-*.exe
+          dist/FileOrganizer-*-build.zip
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## 📦 Release ${{ github.ref_name }}
+          
+          ### 🔍 What's Changed
+          * Automated release for version ${{ github.ref_name }}
+          
+          ### 📥 Downloads
+          * **Installer**: `FileOrganizer-${{ github.ref_name }}.exe`
+          * **Build Package**: `FileOrganizer-${{ github.ref_name }}-build.zip`
+          
+          ### 💻 Installation
+          - **Option 1**: Download and run the executable directly
+          - **Option 2**: Download the build package for development
+          
+          ### 🔨 Build Package Contents
+          - Executable file
+          - Required dependencies
+          - Support files
+          
+          ### 📝 Notes
+          * The build package is intended for developers and testing
+          * Regular users should use the executable
+        draft: false
+        prerelease: false

@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+from version import VERSION
 
 block_cipher = None
 
@@ -8,7 +9,7 @@ python_dll = os.path.join(os.environ.get('pythonLocation', ''), 'python312.dll')
 current_dir = os.path.dirname(os.path.abspath(SPECPATH))
 
 a = Analysis(
-    ['main.py'],  # Changed to main.py as it's the entry point
+    ['main.py'],
     pathex=[current_dir],
     binaries=[(python_dll, '.')] if os.path.exists(python_dll) else [],
     datas=[],
@@ -42,7 +43,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='FileOrganizer',
+    name=f'FileOrganizer-{VERSION}',  # Add version to executable name
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
