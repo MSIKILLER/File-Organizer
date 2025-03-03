@@ -81,14 +81,33 @@ jobs:
         echo "Directory contents:"
         dir
         
-        # Verify version.py exists and contents
-        Get-Content version.py
+        # Create version.py if it doesn't exist
+        if (-not (Test-Path version.py)) {
+            echo 'VERSION = "1.0.0"' | Out-File -FilePath version.py -Encoding utf8
+            echo "Created version.py"
+        }
+        
+        # Verify version.py contents
         echo "VERSION contents:"
         Get-Content version.py
         
-        # Run PyInstaller with the spec file
-        pyinstaller --clean --log-level DEBUG FileOrganizer.spec
+        # Run PyInstaller with additional debug info
+        echo "Running PyInstaller..."
+        pyinstaller --clean --log-level DEBUG --onefile FileOrganizer.spec
+        
+        # Verify dist directory contents
+        echo "Checking dist directory..."
+        if (Test-Path dist) {
+            Get-ChildItem -Path dist -Recurse
+        } else {
+            echo "dist directory not found after build"
+            exit 1
+        }
+        
         echo "pyinstaller build completed."
+      env:
+        PYTHONPATH: ${GITHUB_WORKSPACE}
+        PYTHONIOENCODING: utf8
 
     - name: List dist directory contents
       run: |
