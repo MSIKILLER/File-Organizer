@@ -4,17 +4,37 @@ on:
   pull_request:
     branches:
       - master
+  issue_comment:
+    types: [created]
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
-# Add permissions block at the workflow level
 permissions:
   contents: read
   pull-requests: write
   issues: write
 
 jobs:
+  # Add a job to check for rebuild comments
+  check_comment:
+    runs-on: windows-latest
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, 'build this please')
+    steps:
+      - name: React to comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
   build:
+    needs: [check_comment]
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && needs.check_comment.result == 'success'))
     runs-on: windows-latest
 
     steps:
@@ -34,6 +54,19 @@ jobs:
         if (Test-Path requirements.txt) {
           pip install -r requirements.txt
         }
+
+    - name: Build Status Comment
+      if: github.event_name == 'issue_comment'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Rebuild initiated! Please wait...'
+          });
 
     - name: Build EXE
       run: |
@@ -93,7 +126,7 @@ jobs:
         echo "ARTIFACT_URL=$artifactUrl" >> $env:GITHUB_ENV
 
     - name: Comment PR
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' || github.event_name == 'issue_comment'
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,7 +134,7 @@ jobs:
           const artifactUrl = process.env.ARTIFACT_URL;
           const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
           
-          const message = `🎉 Build completed successfully!\n\n` +
+          const message = `🎉 Build ${github.event_name === 'issue_comment' ? 're' : ''}completed successfully!\n\n` +
                          `📦 To download the build:\n` +
                          `1. [Direct Download Link](${artifactUrl})\n` +
                          `   or\n` +
