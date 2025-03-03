@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - master
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
 jobs:
   build:
@@ -11,10 +13,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.12'
 
@@ -28,7 +30,16 @@ jobs:
         pyinstaller FileOrganizer.spec
 
     - name: Upload EXE
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: FileOrganizer
         path: dist/FileOrganizer.exe
+        retention-days: 1  # Automatically delete the artifact after 1 day
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+    - name: Delete old artifacts
+      run: |
+        gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.expired == true) | .id' | xargs -I {} gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/{}
