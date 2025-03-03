@@ -53,22 +53,22 @@ jobs:
     - name: Zip the package
       run: |
         echo "Checking if FileOrganizer.exe exists..."
-        $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | Select-Object -First 1 -ExpandProperty FullName
+        $exePath = Get-ChildItem -Path "dist" -Recurse -Filter "FileOrganizer.exe" | Select-Object -First 1
         if ($exePath) {
-          echo "FileOrganizer.exe found at: $exePath"
-          $distPath = Split-Path -Parent $exePath
-          Compress-Archive -Path "$distPath\*" -DestinationPath "FileOrganizer.zip" -Force
-          echo "ZIP archive created."
+            echo "FileOrganizer.exe found at: $($exePath.FullName)"
+            $distPath = $exePath.DirectoryName
+            $destinationPath = Join-Path -Path $PWD -ChildPath "FileOrganizer.zip"
+            Compress-Archive -Path (Join-Path -Path $distPath -ChildPath "*") -DestinationPath $destinationPath -Force
+            echo "ZIP archive created at: $destinationPath"
         } else {
-          Write-Error "FileOrganizer.exe not found in dist directory"
-          exit 1
-      shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+            Write-Error "FileOrganizer.exe not found in dist directory"
+            exit 1
+        }
+      shell: pwsh
       env:
         pythonLocation: C:\hostedtoolcache\windows\Python\3.12.9\x64
         PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.9\x64/lib/pkgconfig
         Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
-        Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
-        Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
