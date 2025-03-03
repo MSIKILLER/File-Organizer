@@ -41,6 +41,21 @@ jobs:
           Write-Error "FileOrganizer.exe not found in dist directory"
         }
 
+    - name: Install gdrive
+      run: |
+        choco install gdrive
+
+    - name: Upload to Google Drive
+      env:
+        GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
+      run: |
+        gdrive upload dist/FileOrganizer.zip --parent 1v_vw0bSRgTQBgz3WWIdHmMIt_vEQbtdr
+
+    - name: Provide download link
+      run: |
+        FILE_ID=$(gdrive list --query "name='FileOrganizer.zip'" --max 1 --no-header | awk '{print $1}')
+        echo "Download link: https://drive.google.com/uc?id=$FILE_ID&export=download"
+
     - name: Upload ZIP
       uses: actions/upload-artifact@v4
       with:
