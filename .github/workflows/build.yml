@@ -33,6 +33,7 @@ jobs:
         dir
         echo "Current working directory:"
         python -c "import os; print(os.getcwd())"
+        cd D:\a\File-Organizer\File-Organizer
         pyinstaller --clean --log-level DEBUG FileOrganizer.spec
         echo "pyinstaller build completed."
 
@@ -56,7 +57,6 @@ jobs:
           echo "ZIP archive created."
         } else {
           Write-Error "FileOrganizer.exe not found in dist directory or its subdirectories"
-        }
 
     - name: Upload ZIP
       uses: actions/upload-artifact@v4
