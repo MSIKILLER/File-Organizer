@@ -28,6 +28,8 @@ jobs:
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
+        dir  # List current directory contents
+        python -c "import os; print(os.getcwd())"  # Print working directory
         pyinstaller --clean FileOrganizer.spec
         echo "pyinstaller build completed."
 
