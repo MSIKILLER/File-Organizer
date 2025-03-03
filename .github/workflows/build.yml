@@ -24,13 +24,16 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
+        # Install any other required packages for your application
+        pip install -r requirements.txt || echo "No requirements.txt found"
 
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
         dir  # List current directory contents
         python -c "import os; print(os.getcwd())"  # Print working directory
-        pyinstaller --clean FileOrganizer.spec
+        # Build with verbose output for debugging
+        pyinstaller --clean --log-level DEBUG FileOrganizer.spec
         echo "pyinstaller build completed."
 
     - name: List all files in dist directory

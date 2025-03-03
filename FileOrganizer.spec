@@ -8,9 +8,9 @@ python_dll = os.path.join(os.environ['pythonLocation'], 'python312.dll')
 current_dir = os.path.dirname(os.path.abspath(SPECPATH))
 
 a = Analysis(
-    [os.path.join(current_dir, 'FileOrganizer.py')],  # Use absolute path
-    pathex=[current_dir],  # Add current directory to path
-    binaries=[(python_dll, '.')],  # Include Python DLL
+    [os.path.join(current_dir, 'main.py')],  # Changed to main.py
+    pathex=[current_dir],
+    binaries=[(python_dll, '.')],
     datas=[],
     hiddenimports=[
         'sys',
@@ -18,7 +18,10 @@ a = Analysis(
         'shutil',
         'pathlib',
         'datetime',
-        'time'
+        'time',
+        'gui',  # Add local modules
+        'organizer',
+        'theme'
     ],
     hookspath=[],
     hooksconfig={},
