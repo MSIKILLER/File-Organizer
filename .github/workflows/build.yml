@@ -53,8 +53,7 @@ jobs:
     - name: Zip the package
       run: |
         echo "Checking if FileOrganizer.exe exists..."
-        $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | 
-                  Select-Object -First 1 -ExpandProperty FullName
+        $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | Select-Object -First 1 -ExpandProperty FullName
         if ($exePath) {
           echo "FileOrganizer.exe found at: $exePath"
           $distPath = Split-Path -Parent $exePath
@@ -84,4 +83,4 @@ jobs:
     steps:
     - name: Delete old artifacts
       run: |
-       gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.expired == true) | .id' | xargs -I {} gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/{}
+        gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.expired == true) | .id' | xargs -I {} gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/{}
