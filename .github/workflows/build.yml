@@ -71,11 +71,21 @@ jobs:
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
+        # Set PYTHONPATH to include project root
+        $env:PYTHONPATH = $pwd.Path
+        echo "PYTHONPATH set to: $env:PYTHONPATH"
+        
         # Show current directory and contents
         echo "Current working directory:"
         pwd
         echo "Directory contents:"
         dir
+        
+        # Verify version.py exists and contents
+        Get-Content version.py
+        echo "VERSION contents:"
+        Get-Content version.py
+        
         # Run PyInstaller with the spec file
         pyinstaller --clean --log-level DEBUG FileOrganizer.spec
         echo "pyinstaller build completed."
