@@ -25,37 +25,27 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyinstaller
 
-    - name: Create dist directory if it doesn't exist
-      run: |
-        if (-not (Test-Path -Path dist)) {
-          New-Item -ItemType Directory -Path dist
-        }
-
-    - name: List dist directory contents before build
-      run: |
-        echo "Listing contents of dist directory before build:"
-        dir dist
-
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
         pyinstaller --clean FileOrganizer.spec
         echo "pyinstaller build completed."
 
-    - name: List dist directory contents after build
+    - name: List all files in dist directory
       run: |
-        echo "Listing contents of dist directory after build:"
-        dir dist
+        echo "Listing all files in dist directory and subdirectories:"
+        Get-ChildItem -Path dist -Recurse
 
     - name: Zip the package
       run: |
         echo "Checking if FileOrganizer.exe exists..."
-        if (Test-Path dist\FileOrganizer.exe) {
-          echo "FileOrganizer.exe found. Creating ZIP archive..."
-          Compress-Archive -Path dist\FileOrganizer.exe -DestinationPath dist\FileOrganizer.zip
+        $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | Select-Object -First 1 -ExpandProperty FullName
+        if ($exePath) {
+          echo "FileOrganizer.exe found at: $exePath"
+          Compress-Archive -Path $exePath -DestinationPath dist\FileOrganizer.zip -Force
           echo "ZIP archive created."
         } else {
-          Write-Error "FileOrganizer.exe not found in dist directory"
+          Write-Error "FileOrganizer.exe not found in dist directory or its subdirectories"
         }
 
     - name: Upload ZIP
@@ -63,7 +53,7 @@ jobs:
       with:
         name: FileOrganizer
         path: dist\FileOrganizer.zip
-        retention-days: 1  # Automatically delete the artifact after 1 day
+        retention-days: 1
 
   cleanup:
     runs-on: ubuntu-latest
@@ -71,4 +61,4 @@ jobs:
     steps:
     - name: Delete old artifacts
       run: |
-        gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.expired == true) | .id' | xargs -I {} gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/{}
+       gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.expired == true) | .id' | xargs -I {} gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/{}
