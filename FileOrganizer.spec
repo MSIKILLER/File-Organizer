@@ -2,10 +2,14 @@
 
 block_cipher = None
 
+# Get Python DLL path
+import os
+python_dll = os.path.join(os.environ['pythonLocation'], 'python312.dll')
+
 a = Analysis(
     ['FileOrganizer.py'],
     pathex=[],
-    binaries=[],
+    binaries=[(python_dll, '.')],  # Include Python DLL
     datas=[],
     hiddenimports=['sys', 'os', 'shutil'],  # Add any imported modules here
     hookspath=[],

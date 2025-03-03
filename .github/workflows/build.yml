@@ -28,7 +28,7 @@ jobs:
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
-        pyinstaller --clean --onefile --add-binary "C:\hostedtoolcache\windows\Python\3.12.9\x64\python312.dll;." FileOrganizer.spec
+        pyinstaller --clean FileOrganizer.spec
         echo "pyinstaller build completed."
 
     - name: List all files in dist directory
