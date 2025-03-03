@@ -28,7 +28,7 @@ jobs:
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
-        pyinstaller --clean FileOrganizer.spec
+        pyinstaller --clean --onefile --add-binary "C:\hostedtoolcache\windows\Python\3.12.9\x64\python312.dll;." FileOrganizer.spec
         echo "pyinstaller build completed."
 
     - name: List all files in dist directory
@@ -42,7 +42,8 @@ jobs:
         $exePath = Get-ChildItem -Path dist -Recurse -Filter FileOrganizer.exe | Select-Object -First 1 -ExpandProperty FullName
         if ($exePath) {
           echo "FileOrganizer.exe found at: $exePath"
-          Compress-Archive -Path $exePath -DestinationPath dist\FileOrganizer.zip -Force
+          $distPath = Split-Path -Parent $exePath
+          Compress-Archive -Path "$distPath\*" -DestinationPath dist\FileOrganizer.zip -Force
           echo "ZIP archive created."
         } else {
           Write-Error "FileOrganizer.exe not found in dist directory or its subdirectories"
