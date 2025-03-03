@@ -27,16 +27,22 @@ jobs:
 
     - name: Build EXE
       run: |
-        pyinstaller FileOrganizer.spec
+        echo "Running pyinstaller to build the executable..."
+        pyinstaller --clean --onefile --distpath dist FileOrganizer.spec
+        echo "pyinstaller build completed."
 
     - name: List dist directory contents
       run: |
+        echo "Listing contents of dist directory:"
         dir dist
 
     - name: Zip the package
       run: |
+        echo "Checking if FileOrganizer.exe exists..."
         if (Test-Path dist\FileOrganizer.exe) {
+          echo "FileOrganizer.exe found. Creating ZIP archive..."
           Compress-Archive -Path dist\FileOrganizer.exe -DestinationPath dist\FileOrganizer.zip
+          echo "ZIP archive created."
         } else {
           Write-Error "FileOrganizer.exe not found in dist directory"
         }
