@@ -35,8 +35,8 @@ jobs:
 
     - name: Zip the package
       run: |
-        if (Test-Path dist/FileOrganizer.exe) {
-          Compress-Archive -Path dist/FileOrganizer.exe -DestinationPath dist/FileOrganizer.zip
+        if (Test-Path dist\FileOrganizer.exe) {
+          Compress-Archive -Path dist\FileOrganizer.exe -DestinationPath dist\FileOrganizer.zip
         } else {
           Write-Error "FileOrganizer.exe not found in dist directory"
         }
@@ -49,7 +49,7 @@ jobs:
       env:
         GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
       run: |
-        gdrive upload dist/FileOrganizer.zip --parent 1v_vw0bSRgTQBgz3WWIdHmMIt_vEQbtdr
+        gdrive upload dist\FileOrganizer.zip --parent 1v_vw0bSRgTQBgz3WWIdHmMIt_vEQbtdr
 
     - name: Provide download link
       run: |
@@ -60,7 +60,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: FileOrganizer
-        path: dist/FileOrganizer.zip
+        path: dist\FileOrganizer.zip
         retention-days: 1  # Automatically delete the artifact after 1 day
 
   cleanup:
