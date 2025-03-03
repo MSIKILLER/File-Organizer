@@ -30,7 +30,7 @@ jobs:
         pyinstaller FileOrganizer.spec
 
     - name: Upload EXE
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: FileOrganizer
         path: dist/FileOrganizer.exe
