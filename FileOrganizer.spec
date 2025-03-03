@@ -4,13 +4,13 @@ block_cipher = None
 
 # Get Python DLL path and current directory
 import os
-python_dll = os.path.join(os.environ['pythonLocation'], 'python312.dll')
+python_dll = os.path.join(os.environ.get('pythonLocation', ''), 'python312.dll')
 current_dir = os.path.dirname(os.path.abspath(SPECPATH))
 
 a = Analysis(
-    [os.path.join(current_dir, 'main.py')],  # Changed to main.py
+    ['main.py'],  # Changed to main.py as it's the entry point
     pathex=[current_dir],
-    binaries=[(python_dll, '.')],
+    binaries=[(python_dll, '.')] if os.path.exists(python_dll) else [],
     datas=[],
     hiddenimports=[
         'sys',
@@ -19,7 +19,7 @@ a = Analysis(
         'pathlib',
         'datetime',
         'time',
-        'gui',  # Add local modules
+        'gui',
         'organizer',
         'theme'
     ],
