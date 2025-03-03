@@ -4,6 +4,14 @@ on:
   pull_request:
     branches:
       - master
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+
+# Add permissions block at the workflow level
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   build:
@@ -11,10 +19,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.12'
 
@@ -22,13 +30,97 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
+        # Try to install requirements if file exists
+        if (Test-Path requirements.txt) {
+          pip install -r requirements.txt
+        }
 
     - name: Build EXE
       run: |
-        pyinstaller FileOrganizer.spec
+        echo "Running pyinstaller to build the executable..."
+        # Show current directory and contents
+        echo "Current working directory:"
+        pwd
+        echo "Directory contents:"
+        dir
+        # Run PyInstaller with the spec file
+        pyinstaller --clean --log-level DEBUG FileOrganizer.spec
+        echo "pyinstaller build completed."
 
-    - name: Upload EXE
-      uses: actions/upload-artifact@v2
+    - name: List dist directory contents
+      run: |
+        echo "Listing contents of dist directory:"
+        if (Test-Path dist) {
+          Get-ChildItem -Path dist -Recurse | Format-Table Name, Length, LastWriteTime
+        } else {
+          echo "dist directory not found"
+        }
+
+    - name: Zip the package
+      run: |
+        echo "Checking if FileOrganizer.exe exists..."
+        $exePath = Get-ChildItem -Path "dist" -Recurse -Filter "FileOrganizer.exe" | Select-Object -First 1
+        if ($exePath) {
+            echo "FileOrganizer.exe found at: $($exePath.FullName)"
+            $distPath = $exePath.DirectoryName
+            $destinationPath = Join-Path -Path $PWD -ChildPath "FileOrganizer.zip"
+            Compress-Archive -Path (Join-Path -Path $distPath -ChildPath "*") -DestinationPath $destinationPath -Force
+            echo "ZIP archive created at: $destinationPath"
+        } else {
+            Write-Error "FileOrganizer.exe not found in dist directory"
+            exit 1
+        }
+      shell: pwsh
+      env:
+        pythonLocation: C:\hostedtoolcache\windows\Python\3.12.9\x64
+        PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.9\x64/lib/pkgconfig
+        Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      id: upload-artifact  # Add this ID to reference the step
       with:
         name: FileOrganizer
-        path: dist/FileOrganizer.exe
+        path: FileOrganizer.zip
+        retention-days: 1
+
+    - name: Get Artifact URL
+      if: github.event_name == 'pull_request'
+      run: |
+        # Get the artifact ID from the upload step
+        $artifactId = "${{ steps.upload-artifact.outputs.artifact-id }}"
+        $artifactUrl = "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}/artifacts/$artifactId"
+        echo "ARTIFACT_URL=$artifactUrl" >> $env:GITHUB_ENV
+
+    - name: Comment PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const artifactUrl = process.env.ARTIFACT_URL;
+          const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          
+          const message = `🎉 Build completed successfully!\n\n` +
+                         `📦 To download the build:\n` +
+                         `1. [Direct Download Link](${artifactUrl})\n` +
+                         `   or\n` +
+                         `2. [View in Actions](${runUrl})\n\n` +
+                         `⚠️ Note: You must be logged in to GitHub to download artifacts.\n` +
+                         `The artifact will be available for 1 day.\n\n` +
+                         `Please download and test the application to verify the changes.`;
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: message
+          });
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+    - name: Delete old artifacts
+      run: |
+        gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.expired == true) | .id' | xargs -I {} gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/{}

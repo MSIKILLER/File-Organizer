@@ -15,7 +15,7 @@ def convert_files(folder_entry, summary_text):
         organize_files_by_type(folder_path, summary_text)
     else:
         messagebox.showerror("Error", "Please select a folder first!")
-
+#create GUI
 def create_gui():
     dark_mode = True
 
