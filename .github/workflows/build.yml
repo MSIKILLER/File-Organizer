@@ -63,6 +63,13 @@ jobs:
         } else {
           Write-Error "FileOrganizer.exe not found in dist directory"
           exit 1
+      shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+      env:
+        pythonLocation: C:\hostedtoolcache\windows\Python\3.12.9\x64
+        PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.9\x64/lib/pkgconfig
+        Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
+        Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
+        Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.9\x64
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
