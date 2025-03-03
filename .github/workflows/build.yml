@@ -28,7 +28,7 @@ jobs:
     - name: Build EXE
       run: |
         echo "Running pyinstaller to build the executable..."
-        pyinstaller --clean --onefile --distpath dist FileOrganizer.spec
+        pyinstaller --clean FileOrganizer.spec
         echo "pyinstaller build completed."
 
     - name: List dist directory contents
